@@ -10,22 +10,25 @@ class FileStorage:
 
     def all(self, cls=None):
         """Returns a dictionary or a list of models of a specified class"""
-        if cls is None:
+        if cls:
+            if isinstance(cls, str):
+                cls = globals().get(cls)
+            if cls and issubclass(cls, BaseModel):
+                cls_dict = {k: v for k,
+                            v in self.__objects.items() if isinstance(v, cls)}
+                return cls_dict
         return FileStorage.__objects
-    else:
-        filtered_objects = {k: v for k, v in FileStorage.__objects.items() if isinstance(v, cls)}
-        return filtered_objects
 
     def new(self, obj):
         """Adds new object to storage dictionary"""
-        key = obj.__class__.__name__ + '.' + obj.id
-        FileStorage.__objects[key] = obj
+        self.all().update({obj.to_dict()['__class__'] + '.' + obj.id: obj})
 
     def save(self):
         """Saves storage dictionary to file"""
         with open(FileStorage.__file_path, 'w') as f:
             temp = {}
-            for key, val in FileStorage.__objects.items():
+            temp.update(FileStorage.__objects)
+            for key, val in temp.items():
                 temp[key] = val.to_dict()
             json.dump(temp, f)
 
@@ -52,10 +55,18 @@ class FileStorage:
                         self.all()[key] = classes[val['__class__']](**val)
         except FileNotFoundError:
             pass
+        except json.decoder.JSONDecodeError:
+            pass
 
     def delete(self, obj=None):
-        """Deletes obj from __objects if it is  inside"""
-        if obj is not None:
-            key = obj.__class__.__name__ + '.' + obj.id
-            if key in FileStorage.__objects:
-                del FileStorage.__objects[key]
+        """Deletes obj from __objects if it is  inside, do nothing if obj is none"""
+        if obj is None:
+            return
+        obj_to_del = f"{obj.__class__.__name__}.{obj.id}"
+
+        try:
+            del FileStorage.__objects[obj_to_del]
+        except AttributeError:
+            pass
+        except KeyboardInterrupt:
+            pass
