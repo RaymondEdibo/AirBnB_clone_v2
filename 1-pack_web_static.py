@@ -1,53 +1,30 @@
 #!/usr/bin/python3
-<<<<<<< HEAD
-"""A module for Fabric script that generates a .tgz archive."""
+"""
+Fabric script to genereate tgz archive
+execute: fab -f 1-pack_web_static.py do_pack
+"""
+
+from datetime import datetime
+from fabric.api import *
 import os
-from datetime import datetime
-from fabric.api import local, runs_once
-
-
-@runs_once
-def do_pack():
-    """Archives the static files."""
-    if not os.path.isdir("versions"):
-        os.mkdir("versions")
-    d_time = datetime.now()
-    output = "versions/web_static_{}{}{}{}{}{}.tgz".format(
-        d_time.year,
-        d_time.month,
-        d_time.day,
-        d_time.hour,
-        d_time.minute,
-        d_time.second
-    )
-    try:
-        print("Packing web_static to {}".format(output))
-        local("tar -cvzf {} web_static".format(output))
-        size = os.stat(output).st_size
-        print("web_static packed: {} -> {} Bytes".format(output, size))
-    except Exception:
-        output = None
-    return output
-=======
-"""
-    Fabric script that generates a .tgz archive from the
-    contents of the web_static folder of the AirBnB Clone repo.
-"""
-from os import makedirs
-from datetime import datetime
-from fabric.api import local
 
 
 def do_pack():
-    """ Function that generates the archive. """
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    file_path = "versions/web_static_{}.tgz".format(timestamp)
+    """
+    making an archive on web_static folder
+    """
 
-    try:
-        makedirs("./versions", exist_ok=True)
-        local('tar -cvzf {} web_static'.format(file_path))
-        return file_path
+    time = datetime.now()
+    archive = 'web_static_' + time.strftime("%Y%m%d%H%M%S") + '.' + 'tgz'
 
-    except:
-        return None
->>>>>>> 65edb161fde4681e45545a2fdd50ba5f5ae48df6
+    print("Packing web_static to versions/{}".format(archive))
+
+    with lcd(os.path.dirname(os.path.abspath(__file__))):
+        local('mkdir -p versions &> /dev/null')
+        create = local('tar -cvzf versions/{} --directory=web_static . &> /dev/null'.format(archive))
+        if create is not None:
+
+            print("web_static packed: versions/{} -> {}Bytes".format(archive, os.path.getsize('versions/' + archive)))
+            return archive
+        else:
+            return None
